@@ -1,0 +1,19 @@
+/* DATA IMPORT */
+/* Source File: student-por.csv */
+/* Source Path: /home/u62856021/Capstone */
+
+%web_drop_table(WORK.students);
+
+
+FILENAME REFFILE '/home/u62856021/Capstone/student-por.csv';
+
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=CSV
+	OUT=WORK.students;
+	GETNAMES=YES;
+RUN;
+
+PROC CONTENTS DATA=WORK.students; RUN;
+
+
+%web_open_table(WORK.students);
