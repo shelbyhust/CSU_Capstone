@@ -17,3 +17,51 @@ PROC CONTENTS DATA=WORK.students; RUN;
 
 
 %web_open_table(WORK.students);
+
+ods noproctitle;
+
+proc format;
+	value _nmissprint low-high="Non-missing";
+	value $_cmissprint " "=" " other="Non-missing";
+run;
+
+proc freq data=WORK.STUDENTS;
+	title3 "Missing Data Frequencies";
+	title4 h=2 "Legend: ., A, B, etc = Missing";
+	format age Medu Fedu traveltime studytime failures famrel freetime goout Dalc 
+		Walc health absences G3 _nmissprint.;
+	format school sex address famsize Pstatus Mjob Fjob reason guardian schoolsup 
+		famsup paid activities nursery higher internet romantic G1 G2 $_cmissprint.;
+	tables school sex age address famsize Pstatus Medu Fedu Mjob Fjob reason 
+		guardian traveltime studytime failures schoolsup famsup paid activities 
+		nursery higher internet romantic famrel freetime goout Dalc Walc health 
+		absences G1 G2 G3 / missing nocum;
+run;
+
+proc freq data=WORK.STUDENTS noprint;
+	table school * sex * age * address * famsize * Pstatus * Medu * Fedu * Mjob * 
+		Fjob * reason * guardian * traveltime * studytime * failures * schoolsup * 
+		famsup * paid * activities * nursery * higher * internet * romantic * famrel 
+		* freetime * goout * Dalc * Walc * health * absences * G1 * G2 * G3 / missing 
+		out=Work._MissingData_;
+	format age Medu Fedu traveltime studytime failures famrel freetime goout Dalc 
+		Walc health absences G3 _nmissprint.;
+	format school sex address famsize Pstatus Mjob Fjob reason guardian schoolsup 
+		famsup paid activities nursery higher internet romantic G1 G2 $_cmissprint.;
+run;
+
+proc print data=Work._MissingData_ noobs label;
+	title3 "Missing Data Patterns across Variables";
+	title4 h=2 "Legend: ., A, B, etc = Missing";
+	format age Medu Fedu traveltime studytime failures famrel freetime goout Dalc 
+		Walc health absences G3 _nmissprint.;
+	format school sex address famsize Pstatus Mjob Fjob reason guardian schoolsup 
+		famsup paid activities nursery higher internet romantic G1 G2 $_cmissprint.;
+	label count="Frequency" percent="Percent";
+run;
+
+title3;
+
+/* Clean up */
+proc delete data=Work._MissingData_;
+run;
