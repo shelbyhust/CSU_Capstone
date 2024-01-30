@@ -18,6 +18,9 @@ PROC CONTENTS DATA=WORK.students; RUN;
 
 %web_open_table(WORK.students);
 
+
+/* Missing data analysis */
+
 ods noproctitle;
 
 proc format;
@@ -64,4 +67,16 @@ title3;
 
 /* Clean up */
 proc delete data=Work._MissingData_;
+run;
+
+
+/* Summary Statistics */
+
+ods noproctitle;
+ods graphics / imagemap=on;
+
+proc means data=WORK.STUDENTS chartype mean std min max median n mode vardef=df 
+		qmethod=os;
+	var age traveltime studytime failures famrel freetime goout Dalc Walc health 
+		absences G3;
 run;
