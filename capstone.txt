@@ -1,22 +1,23 @@
-/* DATA IMPORT */
+/* Import data */
+
 /* Source File: student-por.csv */
 /* Source Path: /home/u62856021/Capstone */
 
-%web_drop_table(WORK.students);
+%web_drop_table(WORK.student);
 
 
 FILENAME REFFILE '/home/u62856021/Capstone/student-por.csv';
 
 PROC IMPORT DATAFILE=REFFILE
 	DBMS=CSV
-	OUT=WORK.students;
+	OUT=WORK.student;
 	GETNAMES=YES;
 RUN;
 
-PROC CONTENTS DATA=WORK.students; RUN;
+PROC CONTENTS DATA=WORK.student; RUN;
 
 
-%web_open_table(WORK.students);
+%web_open_table(WORK.student);
 
 
 /* Missing data analysis */
@@ -28,7 +29,7 @@ proc format;
 	value $_cmissprint " "=" " other="Non-missing";
 run;
 
-proc freq data=WORK.STUDENTS;
+proc freq data=WORK.STUDENT;
 	title3 "Missing Data Frequencies";
 	title4 h=2 "Legend: ., A, B, etc = Missing";
 	format age Medu Fedu traveltime studytime failures famrel freetime goout Dalc 
@@ -41,7 +42,7 @@ proc freq data=WORK.STUDENTS;
 		absences G1 G2 G3 / missing nocum;
 run;
 
-proc freq data=WORK.STUDENTS noprint;
+proc freq data=WORK.STUDENT noprint;
 	table school * sex * age * address * famsize * Pstatus * Medu * Fedu * Mjob * 
 		Fjob * reason * guardian * traveltime * studytime * failures * schoolsup * 
 		famsup * paid * activities * nursery * higher * internet * romantic * famrel 
@@ -75,8 +76,74 @@ run;
 ods noproctitle;
 ods graphics / imagemap=on;
 
-proc means data=WORK.STUDENTS chartype mean std min max median n mode vardef=df 
+proc means data=WORK.STUDENT chartype mean std min max median n mode vardef=df 
 		qmethod=os;
 	var age traveltime studytime failures famrel freetime goout Dalc Walc health 
 		absences G3;
 run;
+
+
+/* Correlation Analysis */
+
+ods noproctitle;
+ods graphics / imagemap=on;
+
+proc corr data=WORK.STUDENT pearson nosimple noprob plots=scatter(ellipse=none);
+	var absences;
+	with failures;
+run;
+
+
+/* Linear Regression Analysis */
+
+ods noproctitle;
+ods graphics / imagemap=on;
+
+proc glmselect data=WORK.STUDENT outdesign(addinputvars)=Work.reg_design 
+		plots=(criterionpanel);
+	class school sex address famsize Pstatus Mjob Fjob reason guardian schoolsup 
+		famsup paid activities nursery higher internet romantic Medu Fedu freetime 
+		goout Dalc Walc health / param=glm;
+	model G3=age traveltime studytime failures famrel absences school sex address 
+		famsize Pstatus Mjob Fjob reason guardian schoolsup famsup paid activities 
+		nursery higher internet romantic Medu Fedu freetime goout Dalc Walc health / 
+		showpvalues selection=stepwise
+    
+   (select=sbc);
+run;
+
+proc reg data=Work.reg_design alpha=0.05 plots(only)=(diagnostics residuals 
+		observedbypredicted);
+	where school is not missing and sex is not missing and address is not missing 
+		and famsize is not missing and Pstatus is not missing and Mjob is not missing 
+		and Fjob is not missing and reason is not missing and guardian is not missing 
+		and schoolsup is not missing and famsup is not missing and paid is not 
+		missing and activities is not missing and nursery is not missing and higher 
+		is not missing and internet is not missing and romantic is not missing and 
+		Medu is not missing and Fedu is not missing and freetime is not missing and 
+		goout is not missing and Dalc is not missing and Walc is not missing and 
+		health is not missing;
+	ods select DiagnosticsPanel ResidualPlot ObservedByPredicted;
+	model G3=&_GLSMOD /;
+	run;
+quit;
+
+proc delete data=Work.reg_design;
+run;
+
+/* Binary Logistic Regression Analysis */
+
+ods noproctitle;
+ods graphics / imagemap=on;
+
+proc logistic data=WORK.STUDENT;
+	class school sex address famsize Pstatus Medu Fedu Mjob Fjob reason guardian 
+		schoolsup famsup paid activities nursery internet romantic famrel freetime 
+		goout Dalc Walc health / param=glm;
+	model higher(event='yes')=school sex address famsize Pstatus Medu Fedu Mjob 
+		Fjob reason guardian schoolsup famsup paid activities nursery internet 
+		romantic famrel freetime goout Dalc Walc health age traveltime studytime 
+		failures absences G3 / link=logit selection=stepwise slentry=0.05 slstay=0.05 
+		hierarchy=single technique=fisher;
+run;
+
